@@ -1,0 +1,17 @@
+{
+  "name": "mediaview",
+  "version": "1.0.0",
+  "description": "show media from a twitter account",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Eddie Cameron",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.2",
+    "request": "^2.83.0",
+    "socket.io": "^2.0.4",
+    "twitter": "^1.7.1"
+  }
+}
