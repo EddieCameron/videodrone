@@ -22,6 +22,9 @@
         var socket = io();
         var allTweets = [];
 
+        var lastVidStart = 0;
+        var minTimePerVideo = 10000;
+
         Array.prototype.pickRandomElement = function () {
             var idx = Math.floor(Math.random() * this.length);
             return this.splice(idx, 1)[0];
@@ -37,24 +40,23 @@
 
             video.load();
             launchIntoFullscreen( video[0] );
-      
-            var nextVideoIn;
-            if (tweetToPlay.type == "animated_gif")
-                nextVideoIn = 10000;
-            else {
-                nextVideoIn =tweetToPlay.video_info.duration_millis;
-                if (nextVideoIn < 10000)
-                    nextVideoIn *= Math.ceil(10000 / nextVideoIn);
-            }
-            console.log("Playing next video in: " + nextVideoIn);
-
-            setTimeout( playNextVideo, nextVideoIn );
         }
 
         socket.on('media', function(allMedia){
             console.log( JSON.stringify( allMedia ) );
             allTweets = allMedia;
-
+            
+            $('video').on('ended',function(){
+                var now = new Date().getTime();
+                console.log( "ended " + now + " " + lastVidStart );
+                if ( now - lastVidStart < minTimePerVideo )
+                    this.play();
+                else {
+                    lastVidStart = now;
+                    playNextVideo();
+                }
+            });
+            
             playNextVideo();
         });
     });
