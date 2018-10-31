@@ -42,27 +42,52 @@
             launchIntoFullscreen( video[0] );
         }
 
-        socket.on('media', function(allMedia){
-            console.log( JSON.stringify( allMedia ) );
-            allTweets = allMedia;
-            
-            $('video').on('ended',function(){
-                var now = new Date().getTime();
-                console.log( "ended " + now + " " + lastVidStart );
-                if ( now - lastVidStart < minTimePerVideo )
-                    this.play();
-                else {
-                    lastVidStart = now;
-                    playNextVideo();
-                }
-            });
-            
-            playNextVideo();
+        $('form').submit(function(){
+            var timeline = $('#timeline').val();
+            if ( timeline.length == 0 ) {
+                $('#error').text( "Empty timeline. Try again" );
+            }
+            else {
+                $('#error').text( "Sending..." );
+                socket.emit('timeline', timeline);
+            }
+            return false;
         });
+            
+        $('video').on('ended',function(){
+            var now = new Date().getTime();
+            if ( now - lastVidStart < minTimePerVideo )
+                this.play();
+            else {
+                lastVidStart = now;
+                playNextVideo();
+            }
+        });
+
+        socket.on('mediaReceived', function(didSucceed, error, allMedia){
+            console.log( "MediaReceived " + didSucceed );
+            if ( didSucceed ) {
+                allTweets = allMedia;
+                $('#error').text( "Success" );
+                playNextVideo();
+            }
+            else {
+                $('#timeline').val("");
+                $('#error').text( JSON.stringify(error) );
+            }
+        });
+
+        socket.on('fetchProgress', function( progressPercent ) {
+            $('#error').text( progressPercent + "%" );
+        } );
     });
 </script>
 </head>
 <body>
-<video preload="none" playsinline width="1920" height="1080" autoplay loop ></video>
+<form action="">
+    <input id="timeline" autocomplete="off" /><button>Send</button>
+</form>
+<p id="error"></p>
+<video preload="none" controls autoplay></video>
 </body>
 </html>

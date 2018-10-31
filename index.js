@@ -11,28 +11,58 @@ app.get('/', function(req, res){
 
 io.on('connection', function(socket){
     console.log('a user connected');
-    io.emit('media', allTweets);
+
+    socket.on('timeline', function (timeline) {
+        // request media from timeline
+        getMediaFromTimeline(timeline,
+            function (progress) {
+                socket.emit('fetchProgress', progress);
+            },
+            function (didSucceed, error, mediaList) {
+                socket.emit('mediaReceived', didSucceed, error, mediaList);
+            });
+    });
 });
 
-http.listen(3000, function(){
-  console.log('listening on *:3000');
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 3000;
+}
+
+http.listen(port, function(){
+  console.log('listening on ' + port );
 });
 
 var client = new Twitter({
-  consumer_key: 'YOUR CONSUMER KEY',
-  consumer_secret: 'YOUR CONSUMER SECRET',
-  access_token_key: 'YOUR ACCESS TOKEN',
-  access_token_secret: 'YOUR ACCESS TOKEN SECRET'
+  consumer_key: process.env.CONSUMER_KEY,
+  consumer_secret: process.env.CONSUMER_SECRET,
+  access_token_key: process.env.ACCESS_TOKEN_KEY,
+  access_token_secret: process.env.ACCESS_TOKEN_SECRET
 });
 
-var timelineToFetch = `PUBLIC TIMELINE SCREENNAME`  // timeline to fetch videos from, wihtout the @
+function getMediaFromTimeline(timelineToFetch, onProgressFunction, onComplete) {
+    var params = { screen_name: timelineToFetch, trim_user: true, count: '200' };
+    var allTweets = [];
 
-var params = { screen_name: timelineToFetch, trim_user: true, count: '200' };
+    client.get('users/show', { screen_name: timelineToFetch, include_entities: false }, function (error, user, response) {
+        if (error) {
+            onComplete(false, error, allTweets);
+        }
+        else {
+            var numTweets = user.statuses_count;
+            var processedTweets = 0;
 
-var oldestTweetId;
-var allTweets = [];
+            getNextUpdates(params, allTweets, function (tweetsInBatch) {
+                processedTweets += tweetsInBatch;
+                var processedPercent = Math.round(processedTweets / numTweets * 100);
+                onProgressFunction(processedPercent);
+                },
+                onComplete);
+        }
+    });
+}
 
-function getNextUpdates() {
+function getNextUpdates(params, tweetList, onProgressMade, onMediaReceived) {
     client.get('statuses/user_timeline', params, function (error, tweets, response) {
         if (!error) {
             tweets.forEach(tweet => {
@@ -56,21 +86,25 @@ function getNextUpdates() {
                     return;
                 }
 
-                allTweets.push(mediaToShow);
+                tweetList.push(mediaToShow);
             });
 
             var oldestId = tweets[tweets.length - 1].id_str;
-            console.log(allTweets.length);
+            onProgressMade(tweets.length);
 
             if (oldestId != params["max_id"]) {
                 // still might be more tweets
                 params["max_id"] = oldestId;
-                getNextUpdates();
+                getNextUpdates(params, tweetList, onProgressMade, onMediaReceived);
             }
-            else
-                console.log("...done!");    
+            else {
+                onMediaReceived(true, "", tweetList);
+            }
+        }
+        else {
+            onMediaReceived(false, error, tweetList);
         }
     });
 }
 
-getNextUpdates();
+//getNextUpdates();
