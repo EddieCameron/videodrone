@@ -1,6 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
+<style>
+* {
+    text-align: center !important;
+    margin: auto !important;
+    font-family: "Lucida Console", Monaco, monospace;
+    line-height: 2;
+}
+html { height: 100%; }
+body {
+    background: url('noise.jpg') no-repeat center center fixed; 
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+
+    background-color: rgb(125, 206, 209);
+    color:#E7B00A;
+    height:100%;
+}
+h1 {
+    color:#D54D12;
+}
+h2 {
+    color:rgb(61, 105, 202);
+}
+div {
+  height: 100%;
+  width: 800px;
+}
+video {display: none}
+</style>
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
@@ -37,8 +68,9 @@
             var video = $('video');
             video.empty();
             video.append( sources );
-
+                
             video.load();
+            video.show();
             launchIntoFullscreen( video[0] );
         }
 
@@ -84,10 +116,15 @@
 </script>
 </head>
 <body>
-<form action="">
-    <input id="timeline" autocomplete="off" /><button>Send</button>
-</form>
-<p id="error"></p>
-<video preload="none" controls autoplay></video>
+<div>
+    <h1>videodrone</h1>
+    <h2>play random videos & gifs from a twitter account</h2>
+    <h3>enter account name, no @</h3>
+    <form action="">
+        @<input id="timeline" autocomplete="off" placeholder="eddiecameron" required/><button>Get videos</button>
+    </form>
+    <p id="error">...</p>
+    <video preload="none" controls autoplay height="400"></video>
+</div>
 </body>
 </html>

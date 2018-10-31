@@ -1,6 +1,7 @@
 var Twitter = require('twitter');
 var fs = require('fs');
-var app = require('express')();
+var express = require('express');
+var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var request = require('request');
@@ -8,6 +9,8 @@ var request = require('request');
 app.get('/', function(req, res){
   res.sendFile( __dirname + '/index.html');
 });
+
+app.use(express.static('public'))
 
 io.on('connection', function(socket){
     console.log('a user connected');
