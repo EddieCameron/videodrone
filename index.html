@@ -31,6 +31,11 @@ div {
   width: 800px;
 }
 video {display: none}
+a,
+#credits {
+    font-size: 10;
+    color: #428A67;
+}
 </style>
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
@@ -121,10 +126,11 @@ video {display: none}
     <h2>play random videos & gifs from a twitter account</h2>
     <h3>enter account name, no @</h3>
     <form action="">
-        @<input id="timeline" autocomplete="off" placeholder="eddiecameron" required/><button>Get videos</button>
+        @<input id="timeline" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="eddiecameron" required/><button>Get videos</button>
     </form>
     <p id="error">...</p>
     <video preload="none" controls autoplay height="400"></video>
+    <p id="credits">by <a href="https://www.grapefruitgames.com">eddie cameron</a></p>
 </div>
 </body>
 </html>
