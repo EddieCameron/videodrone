@@ -1,136 +1,172 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<style>
-* {
-    text-align: center !important;
-    margin: auto !important;
-    font-family: "Lucida Console", Monaco, monospace;
-    line-height: 2;
-}
-html { height: 100%; }
-body {
-    background: url('noise.jpg') no-repeat center center fixed; 
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
-
-    background-color: rgb(125, 206, 209);
-    color:#E7B00A;
-    height:100%;
-}
-h1 {
-    color:#D54D12;
-}
-h2 {
-    color:rgb(61, 105, 202);
-}
-div {
-  height: 100%;
-  width: 800px;
-}
-video {display: none}
-a,
-#credits {
-    font-size: 10;
-    color: #428A67;
-}
-</style>
-<script src="/socket.io/socket.io.js"></script>
-<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-<script>
-
-    // Find the right method, call on correct element
-    function launchIntoFullscreen(element) {
-        if(element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if(element.mozRequestFullScreen) {
-            element.mozRequestFullScreen();
-        } else if(element.webkitRequestFullscreen) {
-            element.webkitRequestFullscreen();
-        } else if(element.msRequestFullscreen) {
-            element.msRequestFullscreen();
+    <style>
+        * {
+            text-align: center !important;
+            margin: auto !important;
+            font-family: "Lucida Console", Monaco, monospace;
+            line-height: 2;
         }
-    }
 
-    $(function () {
-        var socket = io();
-        var allTweets = [];
+        html {
+            height: 100%;
+        }
 
-        var lastVidStart = 0;
-        var minTimePerVideo = 10000;
+        body {
+            background: url('noise.jpg') no-repeat center center fixed;
+            -webkit-background-size: cover;
+            -moz-background-size: cover;
+            -o-background-size: cover;
+            background-size: cover;
+
+            background-color: rgb(125, 206, 209);
+            color: #E7B00A;
+            height: 100%;
+        }
+
+        h1 {
+            color: #D54D12;
+        }
+
+        h2 {
+            color: rgb(61, 105, 202);
+        }
+
+        div {
+            height: 100%;
+            width: 800px;
+        }
+
+        video {
+            display: none
+        }
+
+        a,
+        #credits {
+            font-size: 10;
+            color: #428A67;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
 
         Array.prototype.pickRandomElement = function () {
             var idx = Math.floor(Math.random() * this.length);
             return this.splice(idx, 1)[0];
         }
 
-        function playNextVideo() {
-            var tweetToPlay = allTweets.pickRandomElement();
-            var sources = tweetToPlay.video_info.variants.map( v => "<source src=\"" + v.url + "\">" );
-
-            var video = $('video');
-            video.empty();
-            video.append( sources );
-                
-            video.load();
-            video.show();
-            launchIntoFullscreen( video[0] );
+        // Find the right method, call on correct element
+        function launchIntoFullscreen(element) {
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            }
         }
 
-        $('form').submit(function(){
-            var timeline = $('#timeline').val();
-            if ( timeline.length == 0 ) {
-                $('#error').text( "Empty timeline. Try again" );
-            }
-            else {
-                $('#error').text( "Sending..." );
-                socket.emit('timeline', timeline);
-            }
-            return false;
-        });
-            
-        $('video').on('ended',function(){
-            var now = new Date().getTime();
-            if ( now - lastVidStart < minTimePerVideo )
-                this.play();
-            else {
-                lastVidStart = now;
-                playNextVideo();
-            }
-        });
+        $(function () {
+            var socket = io();
+            var allTweets = [];
 
-        socket.on('mediaReceived', function(didSucceed, error, allMedia){
-            console.log( "MediaReceived " + didSucceed );
-            if ( didSucceed ) {
-                allTweets = allMedia;
-                $('#error').text( "Success" );
-                playNextVideo();
-            }
-            else {
-                $('#timeline').val("");
-                $('#error').text( JSON.stringify(error) );
-            }
-        });
+            var lastVidStart = 0;
+            var minTimePerVideo = 10000;
 
-        socket.on('fetchProgress', function( progressPercent ) {
-            $('#error').text( progressPercent + "%" );
-        } );
-    });
-</script>
+            function playNextVideo() {
+                var tweetToPlay = allTweets.pickRandomElement();
+                var mediaToShow;
+                var sanityCount = 100;
+                do {
+                    mediaToShow = tweetToPlay.extended_entities.media.pickRandomElement();
+                    sanityCount--;
+                } while (sanityCount > 0 && mediaToShow.type != "video" && mediaToShow.type != "animated_gif");
+
+                if ( sanityCount <= 0 ) {
+                    // shouldn't happen but maybe tweet came in with no valid media
+                    setTimeout( playNextVideo, 1.0);
+                    return;
+                }
+
+                var sources = mediaToShow.video_info.variants.map(v => "<source src=\"" + v.url + "\">");
+
+                var video = $('video');
+                video.empty();
+                video.append(sources);
+
+                video.load();
+                video.show();
+
+                var tweetUrl = `https://twitter.com/i/web/status/${tweetToPlay.id_str}`;
+                var tweetInfoHtml = `<a href=${tweetUrl}>${tweetToPlay.text}</a>`;
+
+                var tweetInfo = $('#tweet');
+                tweetInfo.html( tweetInfoHtml );
+
+                launchIntoFullscreen(video[0]);
+            }
+
+            $('form').submit(function () {
+                var timeline = $('#timeline').val();
+                if (timeline.length == 0) {
+                    $('#error').text("Empty timeline. Try again");
+                }
+                else {
+                    $('#error').text("Sending...");
+                    socket.emit('timeline', timeline);
+                }
+                return false;
+            });
+
+            $('video').on('ended', function () {
+                var now = new Date().getTime();
+                if (now - lastVidStart < minTimePerVideo)
+                    this.play();
+                else {
+                    lastVidStart = now;
+                    playNextVideo();
+                }
+            });
+
+            socket.on('mediaReceived', function (didSucceed, error, allMedia) {
+                console.log("MediaReceived " + didSucceed);
+                if (didSucceed) {
+                    allTweets = allMedia;
+                    $('#error').text( '' );
+                    playNextVideo();
+                }
+                else {
+                    $('#timeline').val("");
+                    $('#error').text(JSON.stringify(error));
+                }
+            });
+
+            socket.on('fetchProgress', function (progressPercent) {
+                $('#error').text(progressPercent + "%");
+            });
+        });
+    </script>
 </head>
+
 <body>
-<div>
-    <h1>videodrone</h1>
-    <h2>play random videos & gifs from a twitter account</h2>
-    <h3>enter account name, no @</h3>
-    <form action="">
-        @<input id="timeline" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="eddiecameron" required/><button>Get videos</button>
-    </form>
-    <p id="error">...</p>
-    <video preload="none" controls autoplay height="400"></video>
-    <p id="credits">by <a href="https://www.grapefruitgames.com">eddie cameron</a></p>
-</div>
+    <div>
+        <h1>videodrone</h1>
+        <h2>play random videos & gifs from a twitter account</h2>
+        <h3>enter account name, no @</h3>
+        <form action="">
+            @<input id="timeline" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                placeholder="eddiecameron" required /><button>Get videos</button>
+        </form>
+        <p id="error">...</p>
+        <p id="tweet"></p>
+        <video preload="none" controls autoplay muted height="400"></video>
+        <p id="credits">by <a href="https://www.grapefruitgames.com">eddie cameron</a></p>
+    </div>
 </body>
+
 </html>

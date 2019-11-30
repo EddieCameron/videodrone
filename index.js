@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 var Twitter = require('twitter');
 var fs = require('fs');
 var express = require('express');
@@ -74,22 +76,13 @@ function getNextUpdates(params, tweetList, onProgressMade, onMediaReceived) {
                     return;
                 }
             
-                var foundMedia = false;
-                var mediaToShow;
                 for (let index = 0; index < tweet.extended_entities.media.length; index++) {
-                    mediaToShow = tweet.extended_entities.media[index];
+                    var mediaToShow = tweet.extended_entities.media[index];
                     if (mediaToShow.type == "video" || mediaToShow.type == "animated_gif") {
-                        foundMedia = true;
-                        break;
+                        tweetList.push(tweet);
+                        return;
                     }
                 }
-
-                if (!foundMedia) {
-                    // no media
-                    return;
-                }
-
-                tweetList.push(mediaToShow);
             });
 
             var oldestId = tweets[tweets.length - 1].id_str;
