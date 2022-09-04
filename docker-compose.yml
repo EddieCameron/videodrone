@@ -1,0 +1,13 @@
+version: '3.4'
+
+services:
+  gifoff:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file: .env
+    restart: always
+    environment:
+      NODE_ENV: production
+    ports:
+      - 1700:3000
